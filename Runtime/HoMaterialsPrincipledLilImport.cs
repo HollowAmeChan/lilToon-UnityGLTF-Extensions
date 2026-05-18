@@ -13,6 +13,9 @@ namespace lilToon.UnityGLTF.Extensions
         [Tooltip("Adds a HoMaterialContractAsset sub-asset to editor imports so later converters can read the original glTF contract.")]
         public bool preserveContractJson = true;
 
+        [Tooltip("Hides preserved HoMaterialContractAsset sub-assets in the imported asset hierarchy.")]
+        public bool hideContractSubAssets = false;
+
         [Tooltip("Temporary bridge: when the contract exists, replace UnityGLTF/PBRGraph with URP/Lit using UnityGLTF's already-imported material properties.")]
         public bool applyUrpLitFallback = false;
 
@@ -47,6 +50,9 @@ namespace lilToon.UnityGLTF.Extensions
             if (!TryGetContractJson(material, out var extensionName, out var json))
                 return;
 
+            if (HoMaterialContractParser.TryParse(extensionName, json, out var contract))
+                ApplyContractTags(materialObject, contract);
+
 #if UNITY_EDITOR
             if (settings.preserveContractJson)
                 AddContractAsset(extensionName, materialIndex, material.Name, json);
@@ -75,8 +81,15 @@ namespace lilToon.UnityGLTF.Extensions
             extensionName = material.Extensions.ContainsKey(HoMaterialsPrincipledLilImport.ExtensionName)
                 ? HoMaterialsPrincipledLilImport.ExtensionName
                 : HoMaterialsPrincipledLilImport.LegacyExtensionName;
-            json = extension.Serialize().ToString();
+            json = extension.Serialize().Value.ToString(Newtonsoft.Json.Formatting.None);
             return true;
+        }
+
+        private static void ApplyContractTags(Material material, HoMaterialContract contract)
+        {
+            material.SetOverrideTag("HO_TargetShaderFamily", contract.TargetShaderFamily ?? string.Empty);
+            material.SetOverrideTag("HO_HasHoGLTFNode", contract.HasHoGltfNode ? "True" : "False");
+            material.SetOverrideTag("HO_HoGLTFNodeGroup", contract.HoGltfNodeGroup ?? string.Empty);
         }
 
 #if UNITY_EDITOR
@@ -87,7 +100,7 @@ namespace lilToon.UnityGLTF.Extensions
 
             var asset = ScriptableObject.CreateInstance<HoMaterialContractAsset>();
             asset.name = $"HO Material Contract {materialIndex} {SanitizeName(materialName)}";
-            asset.hideFlags = HideFlags.HideInHierarchy;
+            asset.hideFlags = settings.hideContractSubAssets ? HideFlags.HideInHierarchy : HideFlags.None;
             asset.Initialize(extensionName, materialIndex, materialName, json);
             context.AssetContext.AddObjectToAsset(asset.name, asset);
         }
