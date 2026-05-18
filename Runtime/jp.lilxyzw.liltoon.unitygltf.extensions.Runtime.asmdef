@@ -1,0 +1,19 @@
+{
+  "name": "jp.lilxyzw.liltoon.unitygltf.extensions.Runtime",
+  "rootNamespace": "lilToon.UnityGLTF.Extensions",
+  "references": [
+    "UnityGLTFScripts",
+    "GLTFSerialization"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Newtonsoft.Json.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
