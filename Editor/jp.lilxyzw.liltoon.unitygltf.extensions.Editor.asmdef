@@ -1,0 +1,18 @@
+{
+  "name": "jp.lilxyzw.liltoon.unitygltf.extensions.Editor",
+  "rootNamespace": "lilToon.UnityGLTF.Extensions.Editor",
+  "references": [
+    "jp.lilxyzw.liltoon.unitygltf.extensions.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

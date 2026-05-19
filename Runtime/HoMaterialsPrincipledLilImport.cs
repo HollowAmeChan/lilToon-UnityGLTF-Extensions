@@ -99,7 +99,7 @@ namespace lilToon.UnityGLTF.Extensions
                 return;
 
             var asset = ScriptableObject.CreateInstance<HoMaterialContractAsset>();
-            asset.name = $"HO Material Contract {materialIndex} {SanitizeName(materialName)}";
+            asset.name = $"{SanitizeName(materialName)}_HoGLTF";
             asset.hideFlags = settings.hideContractSubAssets ? HideFlags.HideInHierarchy : HideFlags.None;
             asset.Initialize(extensionName, materialIndex, materialName, json);
             context.AssetContext.AddObjectToAsset(asset.name, asset);
