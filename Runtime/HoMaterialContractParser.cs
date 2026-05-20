@@ -7,11 +7,25 @@ namespace lilToon.UnityGLTF.Extensions
     {
         public string Schema { get; set; }
         public int SchemaVersion { get; set; }
+        public string SourceTool { get; set; }
+        public string SourceBlenderMaterial { get; set; }
         public string TargetShaderFamily { get; set; }
+        public string TargetShaderVariant { get; set; }
+        public string TargetRenderingMode { get; set; }
+        public bool HasUnityState { get; set; }
+        public bool UnityDoubleSided { get; set; }
+        public int UnityCullMode { get; set; } = -1;
+        public int UnityRenderQueue { get; set; } = -1;
+        public string PrincipledJson { get; set; }
+        public string ToonJson { get; set; }
+        public string UnityJson { get; set; }
+        public string ExtrasJson { get; set; }
         public bool HasHoGltfNode { get; set; }
         public string HoGltfNode { get; set; }
         public string HoGltfNodeLabel { get; set; }
         public string HoGltfNodeGroup { get; set; }
+        public string HoGltfNodeGroupContract { get; set; }
+        public string HoGltfNodeGroupVariant { get; set; }
         public HoMaterialContractInput[] HoGltfInputs { get; set; } = System.Array.Empty<HoMaterialContractInput>();
     }
 
@@ -35,9 +49,18 @@ namespace lilToon.UnityGLTF.Extensions
                 {
                     Schema = obj.Value<string>("schema"),
                     SchemaVersion = obj.Value<int?>("schemaVersion") ?? 0,
+                    SourceTool = obj.SelectToken("source.tool")?.Value<string>(),
+                    SourceBlenderMaterial = obj.SelectToken("source.blenderMaterial")?.Value<string>(),
                     TargetShaderFamily = obj.SelectToken("target.shaderFamily")?.Value<string>(),
+                    TargetShaderVariant = obj.SelectToken("target.shaderVariant")?.Value<string>(),
+                    TargetRenderingMode = obj.SelectToken("target.renderingMode")?.Value<string>(),
+                    PrincipledJson = CompactJson(obj["principled"]),
+                    ToonJson = CompactJson(obj["toon"]),
+                    UnityJson = CompactJson(obj["unity"]),
+                    ExtrasJson = CompactJson(obj["extras"]),
                 };
 
+                ReadUnityState(obj["unity"] as JObject, contract);
                 ReadHoGltfNode(obj["hogltf"] as JObject, contract);
                 return true;
             }
@@ -60,6 +83,22 @@ namespace lilToon.UnityGLTF.Extensions
             return token;
         }
 
+        private static string CompactJson(JToken token)
+        {
+            return token?.ToString(Newtonsoft.Json.Formatting.None) ?? string.Empty;
+        }
+
+        private static void ReadUnityState(JObject unityObj, HoMaterialContract contract)
+        {
+            if (unityObj == null)
+                return;
+
+            contract.HasUnityState = true;
+            contract.UnityDoubleSided = unityObj.Value<bool?>("doubleSided") ?? false;
+            contract.UnityCullMode = unityObj.Value<int?>("cullMode") ?? -1;
+            contract.UnityRenderQueue = unityObj.Value<int?>("renderQueue") ?? -1;
+        }
+
         private static void ReadHoGltfNode(JObject nodeObj, HoMaterialContract contract)
         {
             if (nodeObj == null)
@@ -69,6 +108,8 @@ namespace lilToon.UnityGLTF.Extensions
             contract.HoGltfNode = nodeObj.Value<string>("node");
             contract.HoGltfNodeLabel = nodeObj.Value<string>("nodeLabel");
             contract.HoGltfNodeGroup = nodeObj.Value<string>("nodeGroup");
+            contract.HoGltfNodeGroupContract = nodeObj.Value<string>("nodeGroupContract");
+            contract.HoGltfNodeGroupVariant = nodeObj.Value<string>("nodeGroupVariant");
             contract.HoGltfInputs = ReadInputs(nodeObj);
         }
 
@@ -90,6 +131,14 @@ namespace lilToon.UnityGLTF.Extensions
                     property.Name,
                     property.Name,
                     string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
                     false,
                     property.Value);
             }
@@ -106,7 +155,20 @@ namespace lilToon.UnityGLTF.Extensions
                 var socketObj = sockets[i] as JObject;
                 if (socketObj == null)
                 {
-                    result[i] = CreateInput(string.Empty, string.Empty, string.Empty, false, sockets[i]);
+                    result[i] = CreateInput(
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        false,
+                        sockets[i]);
                     continue;
                 }
 
@@ -114,6 +176,14 @@ namespace lilToon.UnityGLTF.Extensions
                     socketObj.Value<string>("name"),
                     socketObj.Value<string>("identifier"),
                     socketObj.Value<string>("type"),
+                    socketObj.Value<string>("description"),
+                    socketObj.Value<string>("priority"),
+                    socketObj.Value<string>("target"),
+                    socketObj.Value<string>("group"),
+                    socketObj.Value<string>("role"),
+                    socketObj.Value<string>("blend"),
+                    CompactJson(socketObj["metadata"]),
+                    CompactJson(socketObj["link"]),
                     socketObj.Value<bool?>("linked") ?? false,
                     socketObj["value"]);
             }
@@ -125,6 +195,14 @@ namespace lilToon.UnityGLTF.Extensions
             string name,
             string identifier,
             string socketType,
+            string description,
+            string priority,
+            string target,
+            string socketGroup,
+            string role,
+            string blend,
+            string metadataJson,
+            string linkJson,
             bool linked,
             JToken value)
         {
@@ -140,6 +218,14 @@ namespace lilToon.UnityGLTF.Extensions
                 name ?? string.Empty,
                 identifier ?? string.Empty,
                 socketType ?? string.Empty,
+                description ?? string.Empty,
+                priority ?? string.Empty,
+                target ?? string.Empty,
+                socketGroup ?? string.Empty,
+                role ?? string.Empty,
+                blend ?? string.Empty,
+                metadataJson ?? string.Empty,
+                linkJson ?? string.Empty,
                 linked,
                 kind,
                 valueJson,
