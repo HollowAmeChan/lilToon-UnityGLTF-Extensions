@@ -93,6 +93,21 @@ HO_materials_principled_lil
 - `applyUrpLitFallback`  
   临时过渡口。它读取 UnityGLTF 已经导入到 PBRGraph 风格材质上的属性，并切换到 URP/Lit。它不是最终的 lilToon/lilPBR 路线。
 
+- `applyLilToonMapping`
+  当契约目标是 lilToon 时，直接把导入材质切换到对应 lilToon shader，并写入 HoLil socket 值。这个映射只自动应用不透明和镂空两类材质状态。
+
+## alpha 与 render queue 策略
+
+导入器会保留契约里的 alpha 判断，但不会把半透明判断直接变成 Unity 材质状态：
+
+- `HO_AlphaMode`：`0=Opaque`、`1=Cutout`、`2=Dither`、`3=Transparent`。
+- `HO_AlphaModeHint`：可读提示名。
+- `HO_UnityRenderQueue`：如果契约里有 `unity.renderQueue`，只作为 tag 保留。
+
+lilToon 自动映射时，`Opaque` 走不透明 shader，`Cutout` / `Dither` 走镂空 shader。`Transparent` 只作为 tag 保存，不强制选择半透明 shader，也不写 `material.renderQueue`。半透明由 Unity 侧按 lilToon 预设手动切换，避免导入器破坏 lilToon 自己的 preset/queue 语义。
+
+临时 URP/Lit fallback 仍按 URP/Lit 的 surface 规则设置队列；它和 lilToon 目标映射是两条路径。
+
 ## 如何继续添加 lilToon/lilPBR 映射
 
 保持插件入口稳定，把真正的映射逻辑拆成小 mapper：

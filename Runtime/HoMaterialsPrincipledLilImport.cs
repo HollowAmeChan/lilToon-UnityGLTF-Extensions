@@ -25,7 +25,7 @@ namespace lilToon.UnityGLTF.Extensions
         [Tooltip("Temporary bridge: when the contract exists, replace UnityGLTF/PBRGraph with URP/Lit using UnityGLTF's already-imported material properties.")]
         public bool applyUrpLitFallback = false;
 
-        [Tooltip("When the HoGLTF contract targets lilToon, switch the imported material to a lilToon shader and apply HoLil socket values.")]
+        [Tooltip("When the HoGLTF contract targets lilToon, switch the imported material to a lilToon shader and apply HoLil socket values. Transparent alpha hints stay as tags; queues are left to lilToon presets.")]
         public bool applyLilToonMapping = true;
 
         [Tooltip("Logs HO material import decisions to the Console. Enable only while diagnosing import setup issues.")]
@@ -190,6 +190,9 @@ namespace lilToon.UnityGLTF.Extensions
             material.SetOverrideTag("HO_TargetShaderFamily", contract.TargetShaderFamily ?? string.Empty);
             material.SetOverrideTag("HO_TargetShaderVariant", contract.TargetShaderVariant ?? string.Empty);
             material.SetOverrideTag("HO_TargetRenderingMode", contract.TargetRenderingMode ?? string.Empty);
+            var alphaMode = GetContractAlphaMode(contract);
+            material.SetOverrideTag("HO_AlphaMode", alphaMode.ToString());
+            material.SetOverrideTag("HO_AlphaModeHint", AlphaModeName(alphaMode));
             material.SetOverrideTag("HO_HasHoGLTFNode", contract.HasHoGltfNode ? "True" : "False");
             material.SetOverrideTag("HO_HoGLTFNodeGroup", contract.HoGltfNodeGroup ?? string.Empty);
             material.SetOverrideTag("HO_HoGLTFNodeGroupContract", contract.HoGltfNodeGroupContract ?? string.Empty);
@@ -220,12 +223,13 @@ namespace lilToon.UnityGLTF.Extensions
         private bool ApplyLilToonMapping(Material material, HoMaterialContract contract)
         {
             var source = CaptureUnityGltfMaterialValues(material);
-            var alphaMode = GetInputInt(contract, "AlphaMode", RenderingModeToAlphaMode(contract.TargetRenderingMode));
+            var alphaMode = GetContractAlphaMode(contract);
+            var materialAlphaMode = AutomaticLilToonMaterialAlphaMode(alphaMode);
             var transparentMode = GetInputInt(contract, "TransparentMode", 0);
             var outline = GetInputFloat(contract, "UseOutline", 0f) > 0.5f;
-            var shaderName = SelectLilToonShader(contract, alphaMode, transparentMode, outline);
+            var shaderName = SelectLilToonShader(contract, materialAlphaMode, transparentMode, outline);
             var shader = Shader.Find(shaderName);
-            LogImportDiagnostic(-1, material.name, $"selected shader '{shaderName}', found={shader != null}, alphaMode={alphaMode}, transparentMode={transparentMode}, outline={outline}");
+            LogImportDiagnostic(-1, material.name, $"selected shader '{shaderName}', found={shader != null}, alphaMode={alphaMode}, materialAlphaMode={materialAlphaMode}, transparentMode={transparentMode}, outline={outline}");
             if (shader == null)
             {
                 Debug.LogWarning($"HO material contract requested lilToon shader '{shaderName}', but it was not found. Contract tags were preserved.", material);
@@ -263,10 +267,7 @@ namespace lilToon.UnityGLTF.Extensions
             ApplyLilToonRim(material, contract);
             ApplyLilToonOutline(material, contract, outline);
             ApplyLilToonEmission(material, contract, source);
-            ApplyLilToonSurfaceState(material, alphaMode, transparentMode, outline);
-
-            if (contract.HasUnityState && contract.UnityRenderQueue >= 0)
-                material.renderQueue = contract.UnityRenderQueue;
+            ApplyLilToonSurfaceState(material, materialAlphaMode, transparentMode, outline);
 
             return true;
         }
@@ -431,7 +432,6 @@ namespace lilToon.UnityGLTF.Extensions
                 SetFloat(material, "_AlphaToMask", 0f);
                 SetFloat(material, "_ZWrite", transparentMode == 2 ? 1f : 0f);
                 material.SetOverrideTag("RenderType", "Transparent");
-                material.renderQueue = (int)RenderQueue.Transparent;
             }
             else
             {
@@ -440,7 +440,6 @@ namespace lilToon.UnityGLTF.Extensions
                 SetFloat(material, "_AlphaToMask", cutout ? 1f : 0f);
                 SetFloat(material, "_ZWrite", 1f);
                 material.SetOverrideTag("RenderType", cutout ? "TransparentCutout" : string.Empty);
-                material.renderQueue = cutout ? (int)RenderQueue.AlphaTest : -1;
             }
 
             if (outline)
@@ -450,6 +449,31 @@ namespace lilToon.UnityGLTF.Extensions
                 SetFloat(material, "_OutlineAlphaToMask", cutout ? 1f : 0f);
                 SetFloat(material, "_OutlineZWrite", 1f);
             }
+        }
+
+        private static string AlphaModeName(int alphaMode)
+        {
+            switch (alphaMode)
+            {
+                case 1:
+                    return "Cutout";
+                case 2:
+                    return "Dither";
+                case 3:
+                    return "Transparent";
+                default:
+                    return "Opaque";
+            }
+        }
+
+        private static int GetContractAlphaMode(HoMaterialContract contract)
+        {
+            return GetInputInt(contract, "AlphaMode", RenderingModeToAlphaMode(contract.TargetRenderingMode));
+        }
+
+        private static int AutomaticLilToonMaterialAlphaMode(int alphaMode)
+        {
+            return alphaMode == 1 || alphaMode == 2 ? 1 : 0;
         }
 
         private static int RenderingModeToAlphaMode(string renderingMode)

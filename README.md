@@ -35,13 +35,23 @@ HO_materials_openpbr_lil
 - 把原始 extension JSON 保存成 `HoMaterialContractAsset` 子资源；
 - 解析 schema、目标 shader family 和 HoGLTF 节点/socket 数据；
 - 给导入后的 Unity 材质写入 contract metadata tag；
+- 当契约目标是 lilToon 时，可直接切换到 lilToon shader 并写入 HoLil socket 值；
 - 可选地应用临时 URP/Lit fallback 映射。
 
 fallback 只是过渡入口。长期目标是把保存下来的契约直接映射成 lilToon 或 lilPBR 材质。
 
+## lilToon 透明度策略
+
+导入器会把契约里的 alpha 判断写成 Unity 材质 tag：
+
+- `HO_AlphaMode`：数字值，`0=Opaque`、`1=Cutout`、`2=Dither`、`3=Transparent`。
+- `HO_AlphaModeHint`：可读提示名。
+
+lilToon 自动映射只应用不透明和镂空两类材质状态。即使契约里出现 `Transparent`，导入器也只保留上述 tag，不会强制切到半透明 shader，也不会写 `material.renderQueue`。半透明应在 Unity 侧按 lilToon 自己的预设手动切换；`unity.renderQueue` 只会作为 `HO_UnityRenderQueue` tag 保留给调试或后续工具参考。
+
 ## 重要文件
 
-- `Runtime/HoMaterialsPrincipledLilImport.cs`：UnityGLTF 插件入口和 fallback 材质映射。
+- `Runtime/HoMaterialsPrincipledLilImport.cs`：UnityGLTF 插件入口、lilToon 映射和 fallback 材质映射。
 - `Runtime/HoMaterialContractParser.cs`：解析 schema、target 和 HoGLTF 节点输入。
 - `Runtime/HoMaterialContractAsset.cs`：保存原始 JSON 和解析结果的 ScriptableObject 子资源。
 - `Editor/HoMaterialContractDebugMenu.cs`：打印契约输入的调试菜单。
