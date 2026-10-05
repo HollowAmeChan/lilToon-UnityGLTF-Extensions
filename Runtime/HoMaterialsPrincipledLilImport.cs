@@ -32,7 +32,7 @@ namespace lilToon.UnityGLTF.Extensions
         public bool logImportDiagnostics = false;
 
         public override string DisplayName => ExtensionName;
-        public override string Description => "Imports Hollow material contracts for lilToon/lilPBR pipelines.";
+        public override string Description => "Imports Hollow material contracts for the current Ho rendering pipeline.";
         public override string HelpUrl => "https://github.com/KhronosGroup/UnityGLTF";
 
         public override GLTFImportPluginContext CreateInstance(GLTFImportContext context)
@@ -228,6 +228,12 @@ namespace lilToon.UnityGLTF.Extensions
             var transparentMode = GetInputInt(contract, "TransparentMode", 0);
             var outline = GetInputFloat(contract, "UseOutline", 0f) > 0.5f;
             var shaderName = SelectLilToonShader(contract, materialAlphaMode, transparentMode, outline);
+            if (string.IsNullOrEmpty(shaderName))
+            {
+                var variant = contract.TargetShaderVariant ?? contract.HoGltfNodeGroupVariant;
+                Debug.LogWarning($"HO material contract requested retired lilToon variant '{variant}'. Contract tags were preserved; this variant needs a dedicated shader in the current pipeline.", material);
+                return false;
+            }
             var shader = Shader.Find(shaderName);
             LogImportDiagnostic(-1, material.name, $"selected shader '{shaderName}', found={shader != null}, alphaMode={alphaMode}, materialAlphaMode={materialAlphaMode}, transparentMode={transparentMode}, outline={outline}");
             if (shader == null)
@@ -301,12 +307,11 @@ namespace lilToon.UnityGLTF.Extensions
         private static string SelectLilToonShader(HoMaterialContract contract, int alphaMode, int transparentMode, bool outline)
         {
             var variant = (contract.TargetShaderVariant ?? contract.HoGltfNodeGroupVariant ?? string.Empty).Trim();
-            if (variant.Equals("lite", System.StringComparison.OrdinalIgnoreCase))
-                return SelectLilToonLiteShader(alphaMode, transparentMode, outline);
-            if (variant.Equals("tessellation", System.StringComparison.OrdinalIgnoreCase))
-                return SelectLilToonTessellationShader(alphaMode, transparentMode, outline);
-            if (variant.Equals("gem", System.StringComparison.OrdinalIgnoreCase))
-                return "Hidden/lilToonGem";
+            if (variant.Equals("lite", System.StringComparison.OrdinalIgnoreCase) ||
+                variant.Equals("tessellation", System.StringComparison.OrdinalIgnoreCase) ||
+                variant.Equals("gem", System.StringComparison.OrdinalIgnoreCase) ||
+                variant.Equals("liquid", System.StringComparison.OrdinalIgnoreCase))
+                return null;
             if (variant.Equals("refraction", System.StringComparison.OrdinalIgnoreCase))
                 return "Hidden/lilToonRefraction";
             if (variant.Equals("fur", System.StringComparison.OrdinalIgnoreCase))
@@ -347,37 +352,9 @@ namespace lilToon.UnityGLTF.Extensions
             return outline ? "Hidden/lilToonOutline" : "lilToon";
         }
 
-        private static string SelectLilToonLiteShader(int alphaMode, int transparentMode, bool outline)
-        {
-            if (alphaMode == 1 || alphaMode == 2)
-                return outline ? "Hidden/lilToonLiteCutoutOutline" : "Hidden/lilToonLiteCutout";
-            if (alphaMode == 3)
-            {
-                if (transparentMode == 1)
-                    return outline ? "Hidden/lilToonLiteOnePassTransparentOutline" : "Hidden/lilToonLiteOnePassTransparent";
-                if (transparentMode == 2)
-                    return outline ? "Hidden/lilToonLiteTwoPassTransparentOutline" : "Hidden/lilToonLiteTwoPassTransparent";
-                return outline ? "Hidden/lilToonLiteTransparentOutline" : "Hidden/lilToonLiteTransparent";
-            }
 
-            return outline ? "Hidden/lilToonLiteOutline" : "Hidden/lilToonLite";
-        }
 
-        private static string SelectLilToonTessellationShader(int alphaMode, int transparentMode, bool outline)
-        {
-            if (alphaMode == 1 || alphaMode == 2)
-                return outline ? "Hidden/lilToonTessellationCutoutOutline" : "Hidden/lilToonTessellationCutout";
-            if (alphaMode == 3)
-            {
-                if (transparentMode == 1)
-                    return outline ? "Hidden/lilToonTessellationOnePassTransparentOutline" : "Hidden/lilToonTessellationOnePassTransparent";
-                if (transparentMode == 2)
-                    return outline ? "Hidden/lilToonTessellationTwoPassTransparentOutline" : "Hidden/lilToonTessellationTwoPassTransparent";
-                return outline ? "Hidden/lilToonTessellationTransparentOutline" : "Hidden/lilToonTessellationTransparent";
-            }
 
-            return outline ? "Hidden/lilToonTessellationOutline" : "Hidden/lilToonTessellation";
-        }
 
         private void ApplyLilToonShadow(Material material, HoMaterialContract contract)
         {
