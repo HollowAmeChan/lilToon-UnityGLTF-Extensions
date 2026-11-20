@@ -1,6 +1,6 @@
 # lilToon UnityGLTF Extensions
 
-Ho 渲染体系的 glTF 材质导入桥，为 UnityGLTF 增加 Hollow 材质契约支持，接收 Blender 侧 HoGLTF 导出的材质契约。
+Ho 渲染体系的 glTF 材质导入桥，为 UnityGLTF 增加 Hollow 材质契约支持，读取 glTF 文件中的 Ho 材质契约并映射到 Unity 材质。
 
 ## 功能
 
@@ -17,12 +17,13 @@ Ho 渲染体系的 glTF 材质导入桥，为 UnityGLTF 增加 Hollow 材质契�
 | 仓库 | 用途 |
 | --- | --- |
 | [HoTools](https://github.com/HollowAmeChan/HoTools) | Blender 角色、模型、贴图、动画与自动化工具 |
-| [HoGLTF](https://github.com/HollowAmeChan/HoGLTF) | Blender glTF 导出与 Ho 材质契约桥接 |
 | [HoUrp17.3.0](https://github.com/HollowAmeChan/HoUrp17.3.0) | URP 渲染基座 |
 | [HoUrpConfig17.0.3](https://github.com/HollowAmeChan/HoUrpConfig17.0.3) | URP Shader 配置 |
 | [lilToon](https://github.com/HollowAmeChan/lilToon) | 角色 / NPR 着色器 |
 | [lilToon-URP-Extensions](https://github.com/HollowAmeChan/lilToon-URP-Extensions) | 光照、阴影、反射与后处理扩展 |
 | [HoUnityTools](https://github.com/HollowAmeChan/HoUnityTools) | 角色、动画与创作工具 |
+
+[HoGLTF](https://github.com/HollowAmeChan/HoGLTF) 已从 Ho 渲染体系退役，不再列为当前工作流的组成部分；原仓库仅作为历史参考。
 
 ## 可选材质合集
 
