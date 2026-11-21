@@ -1,0 +1,8 @@
+{
+  "repository": "HollowAmeChan/lilToon-UnityGLTF-Extensions",
+  "packages": [
+    {
+      "path": "."
+    }
+  ]
+}

@@ -18,3 +18,8 @@
 *.VC.db
 .DS_Store
 Thumbs.db
+# Local release installers
+/_dist/
+
+# Local editor preferences.
+/.vscode/
